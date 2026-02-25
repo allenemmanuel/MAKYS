@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prize Display - MAKYS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0d0d14;
+            --card-bg: #16161e;
+            --accent: #c9a227;
+            --accent-dim: rgba(201, 162, 39, 0.3);
+            --text: #f0f0f0;
+            --text-muted: rgba(255,255,255,0.6);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            background: var(--bg-dark);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .main {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .grid-container {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 2px;
+            padding: 2px;
+        }
+
+        .prize-cell {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 4px;
+            padding: 4px;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .prize-cell.filled {
+            border-color: var(--accent-dim);
+            box-shadow: 0 0 20px var(--accent-dim);
+        }
+
+        .prize-cell .winner {
+            font-size: var(--winner-font-size, 2rem);
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 8px;
+            min-height: 2.5rem;
+        }
+
+        .prize-cell .prize-name {
+            font-size: var(--prize-name-font-size, 0.85rem);
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        .prize-cell .cell-num {
+            position: absolute;
+            top: 8px;
+            left: 12px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .prize-cell { position: relative; }
+
+        .ctrl-bar {
+            position: fixed;
+            bottom: 12px;
+            right: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+        .ctrl-bar.faded { opacity: 0; pointer-events: none; }
+
+        .ctrl-bar a {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: var(--card-bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .ctrl-bar a:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg-dark);
+        }
+
+        .ctrl-bar .page-indicator {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .ctrl-bar button {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: var(--card-bg);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .ctrl-bar button:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg-dark);
+        }
+
+        .empty-placeholder { color: var(--text-muted); font-size: 1.2rem; }
+
+        @media (max-width: 900px) {
+            .grid-container {
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(9, 1fr);
+            }
+        }
+        @media (max-width: 600px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(13, 1fr);
+                gap: 2px;
+                padding: 2px;
+            }
+            .prize-cell { padding: 4px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="main">
+        <div id="gridContainer" class="grid-container"></div>
+    </main>
+
+    <div class="ctrl-bar" id="ctrlBar">
+        <button onclick="prevPage()" title="Previous"><i class="fas fa-chevron-left"></i></button>
+        <span class="page-indicator" id="pageIndicator">(1/12)</span>
+        <button onclick="nextPage()" title="Next"><i class="fas fa-chevron-right"></i></button>
+        <a href="index.html" title="Home"><i class="fas fa-home"></i></a>
+        <button onclick="toggleFullscreen()" title="Fullscreen"><i class="fas fa-expand" id="fsIcon"></i></button>
+        <a href="PrizeConfig.html" title="Configure Prizes"><i class="fas fa-cog"></i></a>
+        <button onclick="clearHistory()" title="Clear & Restore"><i class="fas fa-undo"></i></button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+            authDomain: "makysdraw-87237.firebaseapp.com",
+            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+            projectId: "makysdraw-87237",
+            storageBucket: "makysdraw-87237.firebasestorage.app",
+            messagingSenderId: "1044977366090",
+            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const CELLS_PER_PAGE = 25;
+        const TOTAL_CELLS = 300;
+        const TOTAL_PAGES = 12;
+        let currentPage = 0;
+        let prizes = [];
+        let results = [];
+        let cells = [];
+
+        function buildGrid() {
+            const container = document.getElementById('gridContainer');
+            container.innerHTML = '';
+            cells = [];
+
+            for (let i = 0; i < TOTAL_CELLS; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'prize-cell';
+                cell.dataset.index = i;
+                cell.innerHTML = `
+                    <span class="cell-num">${i + 1}</span>
+                    <div class="winner empty-placeholder">—</div>
+                    <div class="prize-name">Prize ${i + 1}</div>
+                `;
+                container.appendChild(cell);
+                cells.push(cell);
+            }
+
+        }
+
+        function goToPage(p) {
+            currentPage = p;
+            const start = p * CELLS_PER_PAGE;
+            const end = start + CELLS_PER_PAGE;
+
+            cells.forEach((cell, i) => {
+                cell.style.display = (i >= start && i < end) ? 'flex' : 'none';
+            });
+
+            document.getElementById('pageIndicator').textContent = `(${p + 1}/${TOTAL_PAGES})`;
+        }
+
+        function render() {
+            const flattened = results.flatMap(r => (typeof r === 'string' ? r.split(/,\s*/) : [r]).map(s => String(s).trim()));
+
+            cells.forEach((cell, i) => {
+                const winnerEl = cell.querySelector('.winner');
+                const nameEl = cell.querySelector('.prize-name');
+
+                winnerEl.textContent = flattened[i] || '—';
+                winnerEl.className = flattened[i] ? 'winner' : 'winner empty-placeholder';
+                cell.classList.toggle('filled', !!flattened[i]);
+
+                const prizeName = (prizes[i] || '').trim();
+                nameEl.textContent = prizeName || `Prize ${i + 1}`;
+            });
+        }
+
+        function firebaseToArray(val) {
+            if (!val || typeof val !== 'object') return [];
+            if (Array.isArray(val)) return val;
+            return Object.keys(val)
+                .filter(k => /^\d+$/.test(k))
+                .sort((a, b) => parseInt(a) - parseInt(b))
+                .map(k => val[k]);
+        }
+
+        database.ref('drawResults/prizes').on('value', (snapshot) => {
+            prizes = firebaseToArray(snapshot.val());
+            render();
+        });
+
+        database.ref('drawResults/allResults').on('value', (snapshot) => {
+            results = firebaseToArray(snapshot.val());
+            render();
+        });
+
+        database.ref('drawResults/displaySettings/winnerFontSize').on('value', (snapshot) => {
+            const px = snapshot.val();
+            document.documentElement.style.setProperty('--winner-font-size', (px != null ? px : 32) + 'px');
+        });
+
+        database.ref('drawResults/displaySettings/prizeNameFontSize').on('value', (snapshot) => {
+            const px = snapshot.val();
+            document.documentElement.style.setProperty('--prize-name-font-size', (px != null ? px : 14) + 'px');
+        });
+
+        function prevPage() {
+            currentPage = (currentPage - 1 + TOTAL_PAGES) % TOTAL_PAGES;
+            goToPage(currentPage);
+        }
+
+        function nextPage() {
+            currentPage = (currentPage + 1) % TOTAL_PAGES;
+            goToPage(currentPage);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') prevPage();
+            if (e.key === 'ArrowRight') nextPage();
+        });
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen?.();
+                document.getElementById('fsIcon').className = 'fas fa-compress';
+            } else {
+                document.exitFullscreen?.();
+                document.getElementById('fsIcon').className = 'fas fa-expand';
+            }
+        }
+
+        function clearHistory() {
+            if (!confirm('Clear draw history and restore all items to the pool?')) return;
+            database.ref('drawResults').once('value').then((snapshot) => {
+                const data = snapshot.val() || {};
+                const items = data.items || [];
+                const drawn = data.drawnItems || [];
+                const restored = [...new Set([...items, ...drawn])];
+                return database.ref('drawResults').update({
+                    items: restored,
+                    drawnItems: [],
+                    allResults: []
+                });
+            }).then(() => alert('Done. All items restored.')).catch(e => alert('Error: ' + e.message));
+        }
+
+        let idleTimer;
+        const ctrlBar = document.getElementById('ctrlBar');
+        function resetIdle() {
+            ctrlBar.classList.remove('faded');
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => ctrlBar.classList.add('faded'), 2000);
+        }
+        document.addEventListener('mousemove', resetIdle);
+        document.addEventListener('mousedown', resetIdle);
+        resetIdle();
+
+        buildGrid();
+        goToPage(0);
+    </script>
+</body>
+</html>

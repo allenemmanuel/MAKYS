@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prize Configuration - MAKYS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #1a1a2e; color: #eee; min-height: 100vh; padding: 20px; }
+        .config-container { max-width: 1200px; margin: 0 auto; }
+        .prize-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; }
+        .prize-item { display: flex; align-items: center; gap: 8px; }
+        .prize-item label { min-width: 30px; color: #aaa; font-size: 0.9rem; }
+        .prize-item input { flex: 1; padding: 8px; background: #2d2d44; border: 1px solid #444; color: #fff; border-radius: 4px; }
+        .btn-save { background: #4CAF50; color: #fff; padding: 12px 24px; }
+        .btn-load { background: #2196F3; color: #fff; padding: 12px 24px; }
+        .back-link { color: #4CAF50; text-decoration: none; margin-bottom: 20px; display: inline-block; }
+        .back-link:hover { color: #66bb6a; }
+    </style>
+</head>
+<body>
+    <div class="config-container">
+        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to Home</a>
+        <h1>Prize Configuration</h1>
+        <p class="text-muted">Edit prize names. Order 1–300 maps to Prize Display v2. Save to sync.</p>
+        <div class="mb-4 p-3 rounded" style="background: #2d2d44;">
+            <h5 class="mb-3">Display Settings</h5>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <label for="winnerFontSize" class="mb-0" style="color: #aaa;">Winner font size (px):</label>
+                <input type="number" id="winnerFontSize" min="12" max="72" value="32" style="width: 80px; padding: 6px 10px; background: #1a1a2e; border: 1px solid #444; color: #fff; border-radius: 4px;">
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <label for="prizeNameFontSize" class="mb-0" style="color: #aaa;">Prize name font size (px):</label>
+                <input type="number" id="prizeNameFontSize" min="8" max="48" value="14" style="width: 80px; padding: 6px 10px; background: #1a1a2e; border: 1px solid #444; color: #fff; border-radius: 4px;">
+            </div>
+        </div>
+        <div class="mb-4 p-3 rounded" style="background: #2d2d44;">
+            <h5 class="mb-2">Import prize list</h5>
+            <p class="text-muted small mb-2">Paste your list below—one prize per line (e.g. copy from Excel). First 300 lines will fill slots 1–300.</p>
+            <textarea id="importTextarea" rows="8" placeholder="Panasonic SR-Y1BG Rice Cooker [1.8L]&#10;PHISON PCF-6081 6&quot; CIRCULATION STAND FAN&#10;..." style="width: 100%; padding: 10px; background: #1a1a2e; border: 1px solid #444; color: #fff; border-radius: 4px; font-size: 0.9rem;"></textarea>
+            <button type="button" class="btn mt-2" id="importBtn" style="background: #9C27B0; color: #fff;"><i class="fas fa-file-import"></i> Import into list</button>
+        </div>
+        <div class="mb-3">
+            <button class="btn btn-load me-2" id="loadDefaultsBtn"><i class="fas fa-download"></i> Load Defaults</button>
+            <button class="btn btn-save" id="saveBtn"><i class="fas fa-save"></i> Save to Firebase</button>
+        </div>
+        <div id="prizeGrid" class="prize-grid"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+            authDomain: "makysdraw-87237.firebaseapp.com",
+            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+            projectId: "makysdraw-87237",
+            storageBucket: "makysdraw-87237.firebasestorage.app",
+            messagingSenderId: "1044977366090",
+            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const grid = document.getElementById('prizeGrid');
+        const inputs = [];
+
+        for (let i = 0; i < 300; i++) {
+            const div = document.createElement('div');
+            div.className = 'prize-item';
+            div.innerHTML = `<label>${i + 1}.</label><input type="text" data-index="${i}" placeholder="Prize ${i + 1}">`;
+            grid.appendChild(div);
+            inputs.push(div.querySelector('input'));
+        }
+
+        database.ref('drawResults/prizes').on('value', (snapshot) => {
+            const prizes = snapshot.val();
+            if (prizes && Array.isArray(prizes)) {
+                prizes.forEach((name, i) => {
+                    if (inputs[i]) inputs[i].value = name || '';
+                });
+            }
+        });
+
+        database.ref('drawResults/displaySettings/winnerFontSize').on('value', (snapshot) => {
+            const val = snapshot.val();
+            if (val != null) document.getElementById('winnerFontSize').value = val;
+        });
+
+        database.ref('drawResults/displaySettings/prizeNameFontSize').on('value', (snapshot) => {
+            const val = snapshot.val();
+            if (val != null) document.getElementById('prizeNameFontSize').value = val;
+        });
+
+        document.getElementById('loadDefaultsBtn').addEventListener('click', async () => {
+            try {
+                const res = await fetch('displayPrize.html');
+                const html = await res.text();
+                const regex = /<div class="prize-name"[^>]*>([\s\S]*?)<\/div>/g;
+                let m, i = 0;
+                while ((m = regex.exec(html)) !== null && i < 300) {
+                    const name = m[1].replace(/\s+/g, ' ').trim().replace(/^\d+\.\s*/, '');
+                    if (inputs[i]) inputs[i].value = name;
+                    i++;
+                }
+                if (i > 0) {
+                    database.ref('drawResults/prizes').set(inputs.map(inp => inp.value.trim()));
+                    alert(`Loaded ${i} prize names and saved to Firebase.`);
+                } else {
+                    alert('No prizes found. Check displayPrize.html.');
+                }
+            } catch (e) {
+                alert('Could not load: ' + e.message);
+            }
+        });
+
+        document.getElementById('importBtn').addEventListener('click', () => {
+            const raw = document.getElementById('importTextarea').value || '';
+            const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 0);
+            const count = Math.min(lines.length, 300);
+            for (let i = 0; i < 300; i++) {
+                inputs[i].value = i < count ? lines[i] : '';
+            }
+            alert(`Imported ${count} prize(s) into slots 1–${count}. Click "Save to Firebase" to sync to Prize Display.`);
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            const prizes = inputs.map(inp => inp.value.trim());
+            const winnerFontSize = parseInt(document.getElementById('winnerFontSize').value, 10) || 32;
+            const prizeNameFontSize = parseInt(document.getElementById('prizeNameFontSize').value, 10) || 14;
+            database.ref('drawResults/prizes').set(prizes)
+                .then(() => database.ref('drawResults/displaySettings').update({
+                    winnerFontSize,
+                    prizeNameFontSize
+                }))
+                .then(() => alert('Saved to Firebase.'))
+                .catch(e => alert('Error: ' + e.message));
+        });
+    </script>
+</body>
+</html>

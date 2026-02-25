@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prize Grid</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Existing styles (unchanged) */
+        body {
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(45deg, #000000, #111111, #222222, #111111, #000000);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .floating-shapes div {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 10s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+            100% { transform: translateY(0) rotate(360deg); }
+        }
+
+        .sparkles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .sparkles div {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: sparkle 2s infinite ease-in-out;
+        }
+
+        @keyframes sparkle {
+            0% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0); }
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 10;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            max-width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+        }
+
+        table {
+            width: 100%;
+            max-width: 95vw;
+            height: 90vh;
+            border-collapse: collapse;
+            margin: 0 auto;
+            background-color: rgb(0, 0, 0);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            table-layout: fixed;
+        }
+
+        td {
+            border: 1px solid #ffffff;
+            border-radius: 25px;
+            padding: 15px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 18px;
+            position: relative;
+        }
+
+        /* Black Theme: Black background, white text, white borders */
+        .black-theme {
+            background-color: black;
+            color: white;
+        }
+
+        .black-theme td {
+            border: 2px solid white;
+        }
+
+        /* White Theme: White background, black text, black borders */
+        .white-theme {
+            background-color: white;
+            color: black;
+        }
+
+        .white-theme td {
+            border: 2px solid black;
+        }
+
+
+        /* Black Theme: Black background, white text */
+        .black-theme .number-input {
+            background-color: black;
+            color: white;
+            border: 1px solid rgb(0, 0, 0);
+        }
+
+        /* White Theme: White background, black text */
+        .white-theme .number-input {
+            background-color: white;
+            color: black;
+            border: 1px solid rgb(255, 255, 255);
+        }
+
+
+
+        /*for the lines in between the number and prize name */
+        /* td::after {
+            content: '';
+            display: block;
+            width: 100%;
+            height: 1px;
+            background-color: rgba(0, 0, 0, 0.1);
+            margin: 5px auto;
+        } */
+
+        .number-input {
+            width: 150px;
+            padding:5px;
+            font-size: 60px;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid #000000;
+            border-radius: 4px;
+            position: relative;
+            top: -20px;
+            background-color: #000000; /* Light blue background */
+            color: white; /* White text */
+        }
+
+        .number-input.top3 {
+            width: 500px;
+            height: 450px;
+            padding:-5px;
+            font-size: 150px;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid #ffffff;
+            border-radius: 4px;
+            position: relative;
+            top: 50px;
+            left: 50px;
+            background-color: #000000; /* Light blue background */
+            color: white; /* White text */
+        }
+
+        .prize-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffffff;
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+        }
+
+        /* Black Theme: White prize name */
+        .black-theme .prize-name {
+            color: white;
+        }
+
+        /* White Theme: Black prize name */
+        .white-theme .prize-name {
+            color: black;
+        }
+
+
+        /* Pagination styles */
+        .content {
+            display: none;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            position: absolute;
+            
+        }
+
+        .content.active {
+            /* display: block; */
+            opacity: 1;
+            z-index: 10; /* Ensures the active page stays on top */
+        }
+
+        .arrow, .fullscreen-btn {
+            position: fixed;
+            font-size: 40px;
+            cursor: pointer;
+            user-select: none;
+            color: darkgray;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        .arrow {
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .arrow.left {
+            left: 20px;
+        }
+
+        .arrow.right {
+            right: 20px;
+        }
+
+        .fullscreen-btn {
+            bottom: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.8);
+            padding: 8px;
+        }
+
+        .fullscreen-btn:hover {
+            color: #ffcc00;
+        }
+
+        .arrow.faded, .fullscreen-btn.faded {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .page-indicator {
+            position: fixed;
+            bottom: 5px;
+            right: 10px;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            z-index: 1000;
+            user-select: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .page-indicator.faded {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .cell-number {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white; /* Adjust color as needed */
+            z-index: 1; /* Ensure it's above other content */
+        }
+
+        .back-to-home {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.3s;
+        }
+        .back-to-home:hover {
+            color: #ffcc00;
+        }
+
+        .clear-history-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1001;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            background: rgba(220, 53, 69, 0.8);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: opacity 0.5s ease, background 0.3s;
+        }
+        .clear-history-btn:hover {
+            background: rgba(220, 53, 69, 1);
+        }
+        .clear-history-btn.faded {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <a href="index.html" class="back-to-home"><i class="fas fa-arrow-left"></i> Back to Home</a>
+    <button class="clear-history-btn" id="clearHistoryBtn" title="Clear draw history and restore all items to pool"><i class="fas fa-undo"></i> Clear History</button>
+    <!-- Animated background elements -->
+    <div class="floating-shapes">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+    <div class="sparkles" id="sparkles"></div>
+
+    <!-- Container and content -->
+    <div class="container">
+
+        <!-- Page 1 -->
+        <div class="content active" data-page="1">
+            <div class="table-wrapper">
+            <table>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <td>
+                            <!-- <span class="cell-number">1</span> -->
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">FC Abdominal Wheel Roller</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JH Iron board</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" >TEFAL Food Steamer</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" >TEFAL Steam Iron</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PHILIPS Epilator</div>
+                        </td>
+                    </tr>
+                    <!-- Row 2 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">Cordless stand mixer</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">ZENPLUSS Massage Gun</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">RUSSEL TAYLOR 1.7L Kettle</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">LA GOURMET Electric Oven</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TEFAL 1.5L Jar Blender</div>
+                        </td>
+                    </tr>
+                    <!-- Row 3 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">MIDEA Stand Circulation Fan</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">CENTO 8in1 Glasslock Food Storage</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SICC Ramadhan Vouchers</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">DELONGHI Coffee Grinder</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PANASONIC Steam Iron</div>
+                        </td>
+                    </tr>
+                    <!-- Row 4 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">CORNELL Stand Mixer</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">LA GOURMET Glass Chopper</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SICC Ramadhan Vouchers</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">HAMILTON BEACH Frying Pan 24cm</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SPORT DIRECT Gift Card</div>
+                        </td>
+                    </tr>
+                    <!-- Row 5 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">DELIGHTO Soup Pot 24cm</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">FC Fitness Scale</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">GUZEL Study Desk</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JBL Mini Speaker</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">ZENPLUSS Massage Gun</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <!-- Page 2 -->
+        <div class="content" data-page="2">
+            <div class="table-wrapper">
+            <table>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">ELBA Ceramic Cooker</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PANASONIC Multicooker</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PENSONIC Coffee Maker</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SICC Ramadhan Vouchers</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JBL Mini Speaker</div>
+                        </td>
+                    </tr>
+                    <!-- Row 2 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TEFAL Food Steamer</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JISULIFE Clip on Fan</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JD SPORTS Gift Card</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">DELIGHTO Soup Pot 24cm</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TEFAL 1.5L Jar Blender</div>
+                        </td>
+                    </tr>
+                    <!-- Row 3 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">RUBINE Water Heater Cycle</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">ELBA Air Fryer</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">RUSSEL TAYLOR Bread Toaster</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">AIRFLO Triflo Mattress</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">XIOMI Smart Band 9</div>
+                        </td>
+                    </tr>
+                    <!-- Row 4 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JBL Wave Buds</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">XIOMI Smart Band 9</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">RUSSEL TAYLOR Bread Toaster</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TP LINK Tilt Cam</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">PANASONIC 0.4L Tumbler Blender</div>
+                        </td>
+                    </tr>
+                    <!-- Row 5 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PANASONIC Oven Toaster</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">LA GOURMET Electric Oven</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JBL Mini Speaker</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JD SPORTS Gift Card</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">XIOMI Smart Band 9 </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <!-- Page 3 -->
+        <div class="content" data-page="3">
+            <div class="table-wrapper">
+            <table>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TEFAL Frying Pan 28cm</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">LA GOURMET Electric Oven</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">LA GOURMET Electric Oven</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PARKSON Vouchers</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">GUZEL Study Desk</div>
+                        </td>
+                    </tr>
+                    <!-- Row 2 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">KHIND Food Processor</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">MIDEA Stand Circulation Fan</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JBL Mini Speaker</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PANASONIC Oven Toaster</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SEPHORA Gift Card</div>
+                        </td>
+                    </tr>
+                    <!-- Row 3 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">BELKIN Surgeprotector</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">VINNIFIER Hyperbar</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">HAMILTON BEACH 3.7L Soup Pot</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SPORT DIRECT Gift Card</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">LA GOURMET Kyoto Casserole</div>
+                        </td>
+                    </tr>
+                    <!-- Row 4 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">ELECTROLUX Toaster</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PARKSON Vouchers</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">GAOBAR Garment Steamer</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">STANLEY Tumbler Adventure Quencher</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">KENWOOD Oven Toaster</div>
+                        </td>
+                    </tr>
+                    <!-- Row 5 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">LA GOURMET Vitrogan Casserole</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TEFAL Steam Iron</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">ZENPLUSS Massage Gun</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">MIDEA Tower fan</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">GAOBAR Garment steamer </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <!-- Page 4 -->
+        <div class="content" data-page="4">
+            <div class="table-wrapper">
+            <table>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">FABER Sandwich Maker
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">ELBA Ceramic Cooker
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">CENTO 8in1 Glasslock Food Storage
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">20L Dry Bag
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JISULIFE Table Fan
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 2 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">RUSSEL TAYLOR 1.7L Kettle
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TP LINK Tilt Cam
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">KHIND Oven Toaster
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JBL Mini Speaker
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">KENWOOD Citrus Juice Blender
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 3 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">VINNIFIER Portable Mini Karaoke
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SEPHORA Gift Card
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SICC Ramadhan Vouchers
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PHILIPS Hair Dryer
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JD SPORTS Gift Card
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 4 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">FC Life Versa Mini Cycle
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SEPHORA Gift Card
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">KHIND Stand Mixer
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PENSONIC Vacuum Cleaner
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">PANASONIC 1.8L Jar Rice Cooker
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 5 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SEPHORA Gift Card
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TEFAL Food Steamer
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SICC Ramadhan Vouchers
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">AIRFLO Triflo Mattress
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">MONTIGO Travel Mug Tumbler
+</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <!-- Page 5 -->
+        <div class="content" data-page="5">
+            <div class="table-wrapper">
+            <table>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">KHIND Cordless stand mixer
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">MIDEA Tower fan
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">MIDEA Stand Circulation Fan
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">DELIGHTO Wokpan 28cm
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">CORNELL Stand Mixer
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 2 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TEFAL Frying Pan 26cm
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PHILIPS Hair Dryer
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PANASONIC Water Purifier
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JBL Wave Buds
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">LA GOURMET Glass Chopper
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 3 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">VINNIFIER Portable Mini Karaoke
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TP LINK Tilt Cam
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">XIOMI Smart Band 9
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SEPHORA Gift Card
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SICC Ramadhan Vouchers
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 4 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SICC Ramadhan Vouchers
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">ELBA Wet & Dry Vacuum Cleaner
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SEPHORA Gift Card
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">DELONGHI Coffee Grinder
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">MIDEA Stand Circulation Fan
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 5 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TEFAL 1.8L Rice Cooker
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TS Speaker System
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PENSONIC 3L Slow Cooker
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PHILIPS Kettle Double Walled
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JD SPORTS Gift Card
+</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <!-- Page 6 -->
+        <div class="content" data-page="6">
+            <div class="table-wrapper">
+            <table>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SICC Ramadhan Vouchers
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PENSONIC 3L Slow Cooker
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">MONTIGO Ace Water Bottle
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PANASONIC Electric Kettle
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">Cordless Stick Vacuum
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 2 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">FC Fitness Scale
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PARKSON Vouchers
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SICC Ramadhan Vouchers
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PARKSON Vouchers
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JD SPORTS Gift Card
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 3 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SONY Headphone
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">FC Life Versa Mini Cycle
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">KHIND 8in1 Multi Cooker
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">HAMILTON BEACH 3.7L Soup Pot
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">BELKIN Surgeprotector
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 4 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JISULIFE Handheld Fan
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">DELIGHTO Soup Pot 24cm
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PENSONIC Coffee Maker
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SEPHORA Gift Card
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">LA GOURMET Vitrogan Casserole
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 5 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">PANASONIC 1.8L Jar Rice Cooker
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">KENWOOD Oven Toaster
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">STANLEY Tumbler Adventure Quencher
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">20L Dry Bag
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SEPHORA Gift Card
+</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <!-- Page 7 -->
+        <div class="content" data-page="7">
+            <div class="table-wrapper">
+            <table>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">XIOMI Smart Band 9
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SICC Ramadhan Vouchers
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">MIDEA Stand Circulation Fan
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">MONTIGO Ace Water Bottle
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">MONTIGO Travel Mug Tumbler
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 2 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JISULIFE Handheld Fan
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">RODAS Shoe Bench w/Storage 
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">RUSSEL TAYLOR Multicooker
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">NICOLLO Green Ottoman
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SPORT DIRECT Gift Card
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 3 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SONY Headphone
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SEPHORA Gift Card
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TEFAL Deep Frypan 24cm
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PANASONIC Hair Dryer
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">DELIGHTO Wokpan 28cm
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 4 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PHILIPS Hair Dryer
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">RUSSEL TAYLOR 1.7L Kettle
+
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">RUSSEL TAYLOR 0.6L Personal Blender
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">RUBINE Water Heater Cycle
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TP LINK Tilt Cam
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 5 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">LA GOURMET Kyoto Casserole
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">NICOLLO Green Ottoman
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">KENWOOD Food Processor
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SPORT DIRECT Gift Card
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">KHIND Food Processor
+</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <!-- Page 8 -->
+        <div class="content" data-page="8">
+            <div class="table-wrapper">
+            <table>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">JISULIFE Neckfan + Powerbank 10KMah
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SPORT DIRECT Gift Card
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JH Iron board
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">RUSSEL TAYLOR Bread Toaster
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">ELECTROLUX Vacuum Cleaner
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 2 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PANASONIC Electric Kettle
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">KHIND Oven Toaster
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">XIOMI Smart Band 9 
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TP LINK Tilt Cam
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PANASONIC Steam Iron
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 3 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">RUSSEL TAYLOR 1.7L Kettle
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">JISULIFE Neckfan + Powerbank 10KMah
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">TOSHIBA Microwave Oven
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">FABER Sandwich Maker
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SEPHORA Gift Card
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 4 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">SPORT DIRECT Gift Card
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PARKSON Vouchers
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">FC Abdominal Wheel Roller
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">ELECTROLUX Vacuum Cleaner
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">PENSONIC Coffee Maker
+</div>
+                        </td>
+                    </tr>
+                    <!-- Row 5 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">RUSSEL TAYLOR Bread Toaster
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">ZYO 5-Tier Book shelf 
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 3px;">RUSSEL TAYLOR Air Fryer Hello Kitty s/edition
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">JD SPORTS Gift Card
+</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">VINNIFIER Hyperbar
+</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <!-- Page 9 -->
+<!--         <div class="content active">
+            <table>
+                <tbody>
+                   
+                    <tr>
+                        
+                        <td>
+                            <img style="z-index: 1; position: relative; top: 0px; width: 575px; height: 558px; border-radius: 15px; padding: 0; margin: 0;" src="langkawi.png" alt="">
+                            <input type="text" class="number-input top3" readonly>
+                            
+                        </td>
+                        
+                    </tr>
+                    
+                </tbody>
+            </table>
+            <div id="page-number" class="page-number">(9/11)</div>
+        </div> -->
+
+        <!-- Page 10 -->
+<!--         <div class="content active">
+            <table>
+                <tbody>
+                    <tr>
+                        
+                        <td>
+                            <img style="z-index: 1; position: relative; top: 0px; width: 575px; height: 598px; border-radius: 15px; padding: 0; margin: 0;" src="JAKARTA2.png" alt="">
+                            <input type="text" class="number-input top3" readonly>
+                        </td>
+                        
+                    </tr>
+                    
+                </tbody>
+            </table>
+            <div id="page-number" class="page-number">(10/11)</div>
+        </div> -->
+
+        <!-- Page 11 -->
+<!--         <div class="content active">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <img style="z-index: 1; position: relative; top: 0px; width: 576px; height: 576px; border-radius: 15px; padding: 0; margin: 0;" src="korea.jpg" alt="">
+                            <input type="text" class="number-input top3" readonly>
+                        </td>
+                        
+                    </tr>
+                    
+                </tbody>
+            </table>
+            <div id="page-number" class="page-number">(11/11)</div>
+        </div> -->
+
+    </div>
+
+    <!-- Navigation Arrows -->
+    <div class="arrow left" onclick="prevContent()">&#10094;</div>
+    <div class="arrow right" onclick="nextContent()">&#10095;</div>
+    <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Toggle fullscreen"><i class="fas fa-expand"></i></button>
+    <div class="page-indicator" id="pageIndicator">(1/8)</div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+            authDomain: "makysdraw-87237.firebaseapp.com",
+            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+            projectId: "makysdraw-87237",
+            storageBucket: "makysdraw-87237.firebasestorage.app",
+            messagingSenderId: "1044977366090",
+            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Pagination functionality
+        let currentIndex = 0;
+        const contents = document.querySelectorAll('.content[data-page]');
+        const totalPages = contents.length;
+
+        function showContent(index) {
+            contents.forEach((content, i) => {
+                const table = content.querySelector("table");
+                if (i === index) {
+                    content.style.display = "block";
+                    setTimeout(() => content.classList.add("active"), 50);
+                } else {
+                    content.classList.remove("active");
+                    setTimeout(() => { content.style.display = "none"; }, 500);
+                }
+                if (table) {
+                    table.classList.add("black-theme");
+                    table.classList.remove("white-theme");
+                }
+            });
+            document.getElementById('pageIndicator').textContent = `(${index + 1}/${totalPages})`;
+        }
+
+        function nextContent() {
+            currentIndex = (currentIndex + 1) % contents.length;
+            showContent(currentIndex);
+        }
+
+        function prevContent() {
+            currentIndex = (currentIndex - 1 + contents.length) % contents.length;
+            showContent(currentIndex);
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowRight') {
+                nextContent();
+            } else if (event.key === 'ArrowLeft') {
+                prevContent();
+            }
+        });
+
+        showContent(currentIndex);
+
+        // Cursor idle: fade arrows, fullscreen, page indicator, clear history when cursor not moving
+        let idleTimer;
+        const fadeElements = document.querySelectorAll('.arrow, .fullscreen-btn, .page-indicator, .clear-history-btn');
+        function resetIdleTimer() {
+            fadeElements.forEach(el => el.classList.remove('faded'));
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => fadeElements.forEach(el => el.classList.add('faded')), 2000);
+        }
+        document.addEventListener('mousemove', resetIdleTimer);
+        document.addEventListener('mousedown', resetIdleTimer);
+        resetIdleTimer();
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen?.();
+                document.getElementById('fullscreenBtn').innerHTML = '<i class="fas fa-compress"></i>';
+            } else {
+                document.exitFullscreen?.();
+                document.getElementById('fullscreenBtn').innerHTML = '<i class="fas fa-expand"></i>';
+            }
+        }
+
+        // Function to populate the input fields with allResults (result mapping: draw order = prize order)
+        function populateInputFields(allResults) {
+            const inputFields = document.querySelectorAll('.number-input');
+            let index = 0;
+
+            // Flatten the allResults array (each draw result is a string of comma-separated items)
+            const flattenedResults = allResults.flatMap(result => result.split(', '));
+
+            inputFields.forEach((input) => {
+                if (index < flattenedResults.length) {
+                    const val = flattenedResults[index].trim();
+                    input.value = val || '—';
+                    index++;
+                } else {
+                    input.value = '—';
+                }
+            });
+        }
+
+        // Listen for changes in Firebase
+        database.ref('drawResults/allResults').on('value', (snapshot) => {
+            const allResults = firebaseToArray(snapshot.val());
+            populateInputFields(allResults);
+        });
+
+        // Clear History: restore drawn items to pool
+        document.getElementById('clearHistoryBtn').addEventListener('click', function() {
+            if (!confirm('Clear draw history and restore all items to the pool?')) return;
+            database.ref('drawResults').once('value').then((snapshot) => {
+                const data = snapshot.val() || {};
+                const items = data.items || [];
+                const drawnItems = data.drawnItems || [];
+                const restoredItems = [...new Set([...items, ...drawnItems])];
+                return database.ref('drawResults').update({
+                    items: restoredItems,
+                    drawnItems: [],
+                    allResults: []
+                });
+            }).then(() => {
+                populateInputFields([]);
+                alert('History cleared. All drawn items restored to pool.');
+            }).catch(err => alert('Error: ' + err.message));
+        });
+
+        // Function to create sparkles with random positions
+        function createSparkles() {
+            const sparklesContainer = document.getElementById('sparkles');
+            const numSparkles = 50; // Number of sparkles
+
+            for (let i = 0; i < numSparkles; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.classList.add('sparkle');
+
+                // Randomize position
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight;
+                sparkle.style.left = `${x}px`;
+                sparkle.style.top = `${y}px`;
+
+                // Randomize animation delay
+                const delay = Math.random() * 2; // 0 to 2 seconds
+                sparkle.style.animationDelay = `${delay}s`;
+
+                sparklesContainer.appendChild(sparkle);
+            }
+        }
+
+        // Prize names: load from Firebase or use HTML default. Prize numbering: 1–200 in display order.
+        function firebaseToArray(val) {
+            if (!val || typeof val !== 'object') return [];
+            if (Array.isArray(val)) return val;
+            return Object.keys(val).filter(k => /^\d+$/.test(k)).sort((a,b)=>+a-+b).map(k=>val[k]);
+        }
+        database.ref('drawResults/prizes').on('value', (snapshot) => {
+            const prizes = firebaseToArray(snapshot.val());
+            const prizeNames = document.querySelectorAll('.prize-name');
+            prizeNames.forEach((el, i) => {
+                const raw = el.textContent.replace(/^\d+\.\s*/, '').trim();
+                if (!el.dataset.original) el.dataset.original = raw;
+                const displayName = prizes[i] ? prizes[i] : el.dataset.original;
+                el.textContent = (i + 1) + '. ' + (displayName || '');
+            });
+        });
+
+        // Initialize sparkles
+        createSparkles();
+
+        // document.addEventListener('DOMContentLoaded', () => {
+        //     const cells = document.querySelectorAll('td');
+        //     let counter = 1;
+
+        //     cells.forEach(cell => {
+        //         const span = document.createElement('span');
+        //         span.classList.add('cell-number');
+        //         span.textContent = counter++;
+        //         cell.prepend(span); // Add the numbering to the top left corner
+        //     });
+        // });
+
+    </script>
+
+    
+
+</body>
+</html>
