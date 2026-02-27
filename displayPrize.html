@@ -337,6 +337,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
 </head>
 <body>
+    <script>if(!sessionStorage.getItem('staffAuth'))location.replace('StaffLogin.html');</script>
     <a href="index.html" class="back-to-home"><i class="fas fa-arrow-left"></i> Back to Home</a>
     <button class="clear-history-btn" id="clearHistoryBtn" title="Clear draw history and restore all items to pool"><i class="fas fa-undo"></i> Clear History</button>
     <!-- Animated background elements -->
