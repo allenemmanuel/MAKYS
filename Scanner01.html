@@ -449,9 +449,10 @@
             </div>
         </div>
 
-        <!-- Scanner Input Section -->
+        <!-- Scanner Input Section: one input per physical scanner to prevent digit mixing -->
         <div class="scanner-input">
-            <h3>🔍 Current Scan</h3>
+            <h3>🔍 Scanner Inputs</h3>
+            <p class="text-muted mb-3">Use <strong>one input per physical scanner</strong>. Assign each scanner to a different field so digits never mix when two tickets are scanned at once.</p>
             
             <!-- Real-time Duplicate Warning -->
             <div class="alert alert-warning duplicate-alert" id="duplicate-alert" style="display: none;">
@@ -466,19 +467,36 @@
                 ✅ <strong>Item added successfully!</strong>
             </div>
             
-            <div class="mb-3">
-                <label for="qrInput" class="form-label">Scan QR Code (or type manually):</label>
-                <input type="text" class="form-control form-control-lg" id="qrInput" 
-                       placeholder="Scan QR code here - auto-detects duplicates" autofocus>
-                <div class="form-text">QR scanners auto-press Enter - duplicates are automatically blocked</div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6 col-lg-3">
+                    <label for="qrInput1" class="form-label">Scanner 1</label>
+                    <input type="text" class="form-control form-control-lg scanner-field" id="qrInput1" 
+                           placeholder="Scan here" data-scanner="1">
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <label for="qrInput2" class="form-label">Scanner 2</label>
+                    <input type="text" class="form-control form-control-lg scanner-field" id="qrInput2" 
+                           placeholder="Scan here" data-scanner="2">
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <label for="qrInput3" class="form-label">Scanner 3</label>
+                    <input type="text" class="form-control form-control-lg scanner-field" id="qrInput3" 
+                           placeholder="Scan here" data-scanner="3">
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <label for="qrInput4" class="form-label">Scanner 4</label>
+                    <input type="text" class="form-control form-control-lg scanner-field" id="qrInput4" 
+                           placeholder="Scan here" data-scanner="4">
+                </div>
             </div>
+            <div class="form-text mb-3">Each scanner types into its own field and presses Enter — no mixing. Duplicates are blocked automatically.</div>
             
             <div class="d-flex gap-2">
                 <button class="btn btn-primary btn-lg flex-grow-1" onclick="processScan()">
-                    ✅ Process Scan
+                    ✅ Process Scan (focused field)
                 </button>
-                <button class="btn btn-outline-secondary btn-lg" onclick="clearInput()">
-                    ✨ Clear Field
+                <button class="btn btn-outline-secondary btn-lg" onclick="clearAllScannerInputs()">
+                    ✨ Clear All Fields
                 </button>
             </div>
         </div>
@@ -502,11 +520,12 @@
         <div class="alert alert-info mt-4">
             <h5>📋 How to Use with QR Scanner:</h5>
             <ol class="mb-0">
-                <li><strong>Scan QR code</strong> - scanner will auto-fill the field and press Enter</li>
+                <li><strong>Assign one scanner per field</strong> — Scanner 1 to field 1, Scanner 2 to field 2, etc. This prevents digits mixing (e.g. 1023 + 1030 becoming 102330).</li>
+                <li><strong>Scan QR code</strong> — scanner auto-fills its field and presses Enter</li>
                 <li><strong>System instantly checks</strong> if it's a duplicate</li>
                 <li><strong>If unique</strong>: Added to database with green confirmation</li>
                 <li><strong>If duplicate</strong>: Blocked automatically with warning showing original scan number</li>
-                <li><strong>Field auto-clears</strong> after each scan for next QR code</li>
+                <li><strong>That field auto-clears</strong> after each scan for the next QR code</li>
                 <li><strong>All team members</strong> see updates in real-time</li>
             </ol>
         </div>
@@ -631,17 +650,20 @@
             });
         }
 
+        const SCANNER_INPUT_IDS = ['qrInput1', 'qrInput2', 'qrInput3', 'qrInput4'];
+
         // Set up event listeners
         function setupEventListeners() {
-            const qrInput = document.getElementById('qrInput');
-            
-            qrInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    processScan();
-                }
+            SCANNER_INPUT_IDS.forEach(id => {
+                const input = document.getElementById(id);
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        processScan(e.target);
+                    }
+                });
             });
-            
+
             const searchInput = document.getElementById('searchInput');
             searchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -650,68 +672,97 @@
             });
         }
 
-        // Main function to process scans
-        function processScan() {
+        function getScannerInputToProcess(sourceInput) {
+            if (sourceInput && sourceInput.classList && sourceInput.classList.contains('scanner-field')) {
+                return sourceInput;
+            }
+            const focused = document.activeElement;
+            if (focused && focused.classList && focused.classList.contains('scanner-field')) {
+                return focused;
+            }
+            for (const id of SCANNER_INPUT_IDS) {
+                const el = document.getElementById(id);
+                if (el && el.value.trim()) return el;
+            }
+            return null;
+        }
+
+        function clearAllScannerInputs() {
+            SCANNER_INPUT_IDS.forEach(id => {
+                document.getElementById(id).value = '';
+            });
+            document.getElementById('qrInput1').focus();
+            document.getElementById('duplicate-alert').style.display = 'none';
+            document.getElementById('success-alert').style.display = 'none';
+        }
+
+        // Main function to process scans (sourceInput = the field that triggered, e.g. on Enter)
+        function processScan(sourceInput) {
             if (isProcessing) {
                 console.log('Already processing a scan, please wait...');
                 return;
             }
-            
-            const qrInput = document.getElementById('qrInput');
-            const content = qrInput.value.trim();
-            
+
+            const inputEl = getScannerInputToProcess(sourceInput);
+            if (!inputEl) {
+                showScanIndicator('Click a scanner field or scan into one first!', 'warning');
+                return;
+            }
+
+            const content = inputEl.value.trim();
+
             document.getElementById('duplicate-alert').style.display = 'none';
             document.getElementById('success-alert').style.display = 'none';
-            
+
             if (!content) {
                 showScanIndicator('Please scan a QR code first!', 'warning');
                 return;
             }
-            
+
             isProcessing = true;
-            
+
             database.ref('drawResults/items').once('value')
                 .then((snapshot) => {
                     let currentItems = snapshot.val() || [];
-                    
+
                     if (!Array.isArray(currentItems)) {
                         currentItems = [];
                     }
-                    
-                    const isDuplicate = currentItems.some(item => 
+
+                    const isDuplicate = currentItems.some(item =>
                         String(item).toLowerCase() === content.toLowerCase()
                     );
-                    
+
                     if (isDuplicate) {
                         duplicatesBlocked++;
-                        
-                        const originalIndex = currentItems.findIndex(item => 
+
+                        const originalIndex = currentItems.findIndex(item =>
                             String(item).toLowerCase() === content.toLowerCase()
                         );
                         const originalNumber = originalIndex + 1;
-                        
+
                         const duplicateAlert = document.getElementById('duplicate-alert');
                         duplicateAlert.style.display = 'block';
-                        document.getElementById('duplicate-info').innerHTML = 
+                        document.getElementById('duplicate-info').innerHTML =
                             `Item "<strong>${escapeHtml(content)}</strong>" was already scanned as item #${originalNumber}`;
-                        
+
                         showScanIndicator(`Duplicate blocked! (Was #${originalNumber})`, 'duplicate');
-                        
+
                         isProcessing = false;
                         return;
                     }
-                    
+
                     currentItems.push(content);
-                    
+
                     return database.ref('drawResults/items').set(currentItems);
                 })
                 .then((result) => {
                     if (result) {
                         const scanNumber = allItems.length + 1;
-                        
+
                         document.getElementById('success-alert').style.display = 'block';
                         showScanIndicator(`Added as item #${scanNumber}`, 'success');
-                        
+
                         const newItem = {
                             id: allItems.length,
                             content: content,
@@ -720,27 +771,25 @@
                             scanNumber: scanNumber,
                             displayNumber: scanNumber
                         };
-                        
+
                         allItems.push(newItem);
                         lastAddedItemId = newItem.id;
-                        
+
                         updateDisplay();
                         updateStats();
                     }
-                    
-                    const qrInput = document.getElementById('qrInput');
-                    qrInput.value = '';
-                    qrInput.focus();
+
+                    inputEl.value = '';
+                    inputEl.focus();
                     isProcessing = false;
                 })
                 .catch((error) => {
                     console.error('Error adding item:', error);
                     showScanIndicator('Error adding item', 'error');
                     isProcessing = false;
-                    
-                    const qrInput = document.getElementById('qrInput');
-                    qrInput.value = '';
-                    qrInput.focus();
+
+                    inputEl.value = '';
+                    inputEl.focus();
                 });
         }
 
@@ -874,10 +923,9 @@
             }, 3000);
         }
 
-        // Clear input field
+        // Clear all scanner input fields
         function clearInput() {
-            document.getElementById('qrInput').value = '';
-            document.getElementById('qrInput').focus();
+            clearAllScannerInputs();
             document.getElementById('duplicate-alert').style.display = 'none';
             document.getElementById('success-alert').style.display = 'none';
         }

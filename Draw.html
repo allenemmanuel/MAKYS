@@ -318,7 +318,7 @@
             <div class="modal-dialog modal-fullscreen">
                 <div class="modal-content">
                     <div class="modal-body p-0">
-                        <iframe src="slotmac.html" width="100%" height="100%" style="border: none;"></iframe>
+                        <iframe id="slotMachineFrame" width="100%" height="100%" style="border: none;"></iframe>
                     </div>
                 </div>
             </div>
@@ -441,19 +441,33 @@
         slotMachineSound.loop = true; // Loop the sound while the animation is playing
 
         document.getElementById('drawButton').addEventListener('click', function () {
+            const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
+            const availableCount = items.filter(item => !drawnItems.includes(item)).length;
+            if (availableCount === 0) {
+                alert("No items left to draw. Add more items or clear drawn history.");
+                return;
+            }
+            if (numberOfDraws > availableCount) {
+                alert("Number of draws cannot exceed the number of remaining items (" + availableCount + ").");
+                return;
+            }
+
             // Show the modal with the slot machine animation
             const modal = new bootstrap.Modal(document.getElementById('slotMachineModal'));
-            
-            // Start playing slot machine sound
-            slotMachineSound.play().catch(error => console.warn("Audio autoplay blocked:", error));
-
-            modal.show();
-
-            // Send a message to the iframe to reset the animation
             const iframe = document.querySelector('#slotMachineModal iframe');
+
+            // Load slotmac.html only when opening the modal (avoids background sound on draw page load)
+            if (!iframe.src || iframe.src === '' || iframe.src.endsWith('about:blank')) {
+                iframe.src = 'slotmac.html';
+            }
             iframe.onload = function () {
                 iframe.contentWindow.postMessage('resetAnimation', '*');
             };
+
+            modal.show();
+
+            // Start playing slot machine sound
+            slotMachineSound.play().catch(error => console.warn("Audio autoplay blocked:", error));
 
             const slotDuration = Math.max(3, Math.min(15, parseInt(document.getElementById('slotDurationInput').value, 10) || 5)) * 1000;
 
@@ -528,7 +542,7 @@
 
                 setTimeout(() => {
                     playSound('fanfare-sound.mp3');
-                }, -10);
+                }, 400);
 
                 // Update the textarea to show remaining items
                 document.getElementById('inputNames').value = items.join(', ');
