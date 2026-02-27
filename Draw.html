@@ -338,7 +338,7 @@
         </div>
         <div class="mt-4">
             <label for="fontSizeInput" style="color: antiquewhite;">Font Size (px):</label>
-            <input type="number" class="form-control" id="fontSizeInput" min="10" value="53" style="margin-top: 10px;">
+            <input type="number" class="form-control" id="fontSizeInput" min="10" value="71" style="margin-top: 10px;">
         </div>
         <br><br>
         <h3 style="color: antiquewhite;">Previous Draws:</h3>
@@ -365,7 +365,7 @@
         let items = [];
         let drawnItems = [];
         let allResults = [];
-        let currentFontSize = 53;
+        let currentFontSize = 71;
 
         function playSound(soundFile) {
             const audio = new Audio(soundFile);
@@ -630,12 +630,12 @@
         });
 
         document.getElementById('fontSizeInput').addEventListener('input', function () {
-            currentFontSize = parseInt(this.value, 10) || 53;
+            currentFontSize = parseInt(this.value, 10) || 71;
         });
 
         // Initialize currentFontSize from input on load
         document.addEventListener('DOMContentLoaded', function () {
-            currentFontSize = parseInt(document.getElementById('fontSizeInput').value, 10) || 53;
+            currentFontSize = parseInt(document.getElementById('fontSizeInput').value, 10) || 71;
         });
 
         function fadeInCharacterByCharacter(text, container) {
