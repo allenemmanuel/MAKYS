@@ -278,6 +278,35 @@
         .back-to-home:hover {
             color: #ffcc00;
         }
+
+        /* Fullscreen: reduce padding/margin so drawn cards use more of the screen */
+        #container1:fullscreen {
+            padding: 24px;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        #container1:-webkit-full-screen {
+            padding: 24px;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        #container1:-ms-fullscreen {
+            padding: 24px;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        #container1::backdrop {
+            background: #030637;
+        }
+        #container1:fullscreen #result .card {
+            margin: 4px;
+            padding: 8px;
+        }
+        #container1:-webkit-full-screen #result .card,
+        #container1:-ms-fullscreen #result .card {
+            margin: 4px;
+            padding: 8px;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
